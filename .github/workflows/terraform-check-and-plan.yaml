@@ -10,28 +10,6 @@ permissions:
   contents: read # This is required for actions/checkout
 
 jobs:
-  build:
-    name: Go Build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ["1.19", "1.20", "1.21.x"]
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ matrix.go-version }}
-      # You can test your matrix by printing the current Go version
-      - name: Navigate to src folder
-        run: cd src
-      - name: Display Go version
-        run: go version
-      - name: Install Dependencies
-        run: go get .
-      - name: go build
-        run: GOARCH=amd64 GOOS=linux go build -o ./bin/bootstrap ./cmd/main.go
   terraform:
     name: Terraform Plan
     runs-on: ubuntu-latest
@@ -43,7 +21,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::589113656956:role/github
-          role-session-name: samplerolesession
+          role-session-name: github
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform fmt
