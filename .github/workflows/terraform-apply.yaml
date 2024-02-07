@@ -1,6 +1,9 @@
-name: Deploy Infrastructure
+name: Apply Terraform
 
-on: [workflow_call]
+on:
+  push:
+    branches:
+      - master
 
 env:
   AWS_REGION: "eu-west-1"
@@ -37,7 +40,7 @@ jobs:
         id: validate
         run: terraform validate -no-color
 
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan -no-color
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -no-color --auto-approve
         continue-on-error: false

@@ -1,4 +1,4 @@
-name: Deploy Infrastructure
+name: Build Go
 
 on: [workflow_call]
 
@@ -15,20 +15,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ["1.19", "1.20", "1.21.x"]
+        #go-version: ["1.19", "1.20", "1.21.x"]
+        go-version: ["1.21.x"]
 
     steps:
+      - uses: hashicorp/setup-terraform@v2
       - uses: actions/checkout@v4
       - name: Setup Go ${{ matrix.go-version }}
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
       # You can test your matrix by printing the current Go version
-      - name: Navigate to src folder
-        run: cd src
       - name: Display Go version
-        run: go version
+        run: cd src && go version
+
       - name: Install Dependencies
-        run: go get .
+        run: cd src && go get -u -d ./...
+
       - name: go build
-        run: GOARCH=amd64 GOOS=linux go build -o ./bin/bootstrap ./cmd/main.go
+        run: cd src && GOARCH=amd64 GOOS=linux go build -o ./bin/bootstrap ./cmd/main.go\
