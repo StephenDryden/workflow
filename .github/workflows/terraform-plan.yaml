@@ -1,6 +1,6 @@
 name: Plan Terraform
 
-on: [workflow_call]
+on: [push, workflow_call, workflow_dispatch]
 
 env:
   AWS_REGION: "eu-west-1"
