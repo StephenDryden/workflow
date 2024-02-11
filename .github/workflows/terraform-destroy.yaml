@@ -1,10 +1,13 @@
 name: Destroy Terraform
 
-on: [workflow_dispatch]
+on:
+  workflow_call:
+    secrets:
+      AWS_ACCOUNT_ID:
+        required: true
 
 env:
   AWS_REGION: "eu-west-1"
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -22,7 +25,7 @@ jobs:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/github
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github
           role-session-name: github
           aws-region: ${{ env.AWS_REGION }}
 
