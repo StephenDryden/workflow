@@ -47,10 +47,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bootstrap
-          path: ./bin/bootstrap
+          path: /src/bin/
 
   job_2:
     name: Terraform
+    needs: job_1
     runs-on: ubuntu-latest
     steps:
       - name: checkout code
