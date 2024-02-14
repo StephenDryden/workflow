@@ -10,27 +10,37 @@ permissions:
   contents: read # This is required for actions/checkout
 
 jobs:
-  build:
+  job_1:
     name: Go Build
     runs-on: ubuntu-latest
     strategy:
       matrix:
         #go-version: ["1.19", "1.20", "1.21.x"]
         go-version: ["1.21.x"]
-
     steps:
-      - uses: hashicorp/setup-terraform@v2
-      - uses: actions/checkout@v4
+      - name: checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Go ${{ matrix.go-version }}
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
-      # You can test your matrix by printing the current Go version
-      - name: Display Go version
+
+      - name: display go version
         run: cd src && go version
 
-      - name: Install Dependencies
+      - name: install dependencies
         run: cd src && go get -u -d ./...
+
+      - name: go test
+        run: cd src && go test ./...
+        continue-on-error: false
 
       - name: go build
         run: cd src && GOARCH=amd64 GOOS=linux go build -o ./bin/bootstrap ./cmd/main.go\
+
+      - name: archive binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap
+          path: ./bin/bootstrap

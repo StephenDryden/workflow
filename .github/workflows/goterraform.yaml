@@ -1,0 +1,131 @@
+name: build go and deploy terraform
+
+on:
+  workflow_call:
+    secrets:
+      AWS_ACCOUNT_ID:
+        required: true
+
+env:
+  AWS_REGION: "eu-west-1"
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+
+jobs:
+  job_1:
+    name: Go Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        #go-version: ["1.19", "1.20", "1.21.x"]
+        go-version: ["1.21.x"]
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: display go version
+        run: cd src && go version
+
+      - name: install dependencies
+        run: cd src && go get -u -d ./...
+
+      - name: go test
+        run: cd src && go test ./...
+        continue-on-error: false
+
+      - name: go build
+        run: cd src && GOARCH=amd64 GOOS=linux go build -o ./bin/bootstrap ./cmd/main.go\
+
+      - name: archive binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap
+          path: ./bin/bootstrap
+
+  job_2:
+    name: Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: configure terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: download binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bootstrap
+          path: /src/bin/
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github
+          role-session-name: github
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: terraform fmt
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: false
+
+      - name: terraform init
+        id: init
+        run: terraform init
+
+      - name: terraform validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -no-color
+        working-directory: ${{ env.working-directory }}
+
+      - name: plan output
+        id: output
+        uses: actions/github-script@v3
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            ### Workspace
+
+            \`${process.env.TF_WORKSPACE}\`
+
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            <details><summary>Show Plan</summary>
+
+            \`\`\`hcl
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            **Pusher**: @${{ github.actor }}
+            **Action**: ${{ github.event_name }}
+            `;
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: terraform apply
+        id: apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+        working-directory: ${{ env.working-directory }}
