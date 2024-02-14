@@ -44,13 +44,13 @@ jobs:
         run: cd src && GOARCH=amd64 GOOS=linux go build -o ./bin/bootstrap ./cmd/main.go\
 
       - name: list files in root of repo
-        run: ls -ltra && cd /src && ls -ltra && cd /bin && ls -ltra
+        run: ls -ltra && cd src && ls -ltra && cd bin && ls -ltra
 
       - name: archive binary
         uses: actions/upload-artifact@v4
         with:
           name: bootstrap
-          path: ./src/bin/bootstrap
+          path: src/bin/bootstrap
 
   job_2:
     name: Terraform
@@ -67,7 +67,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bootstrap
-          path: /src/bin/
+          path: src/bin/
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v2
