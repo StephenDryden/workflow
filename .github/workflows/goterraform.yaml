@@ -43,7 +43,7 @@ jobs:
         continue-on-error: false
 
       - name: go build
-        run: cd src && GOARCH=amd64 GOOS=linux go build -o ./bin/bootstrap ./cmd/main.go
+        run: cd src && GOARCH=amd64 GOOS=linux go build -o ./bin/bootstrap ./main.go
 
       - name: archive binary
         uses: actions/upload-artifact@v4
